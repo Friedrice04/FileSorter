@@ -2,6 +2,7 @@ import os
 import shutil
 import fnmatch
 import json
+import re
 
 class FileMapping:
     """
@@ -15,16 +16,40 @@ class FileMapping:
         """
         Load mapping from a JSON file.
         """
-        with open(mapping_path, 'r') as f:
+        with open(mapping_path, 'r', encoding="utf-8") as f:
             return json.load(f)
 
     def get_destination(self, filename):
         """
         Return the destination folder for a given filename based on mapping.
+        Supports:
+        - Regex patterns (wrapped in /.../)
+        - fnmatch patterns
+        - fnmatch patterns ending with '.*' will match both with and without extension
         """
         for pattern, folder in self.mapping.items():
-            if fnmatch.fnmatch(filename, pattern):
-                return folder
+            # Regex support
+            if pattern.startswith('/') and pattern.endswith('/'):
+                try:
+                    regex = pattern[1:-1]
+                    if re.search(regex, filename):
+                        return folder
+                except re.error:
+                    continue
+            else:
+                # If pattern ends with '.*', match both with and without extension
+                if pattern.endswith('.*'):
+                    base_pattern = pattern[:-2]
+                    # Match with extension
+                    if fnmatch.fnmatch(filename, pattern):
+                        return folder
+                    # Match without extension
+                    name, ext = os.path.splitext(filename)
+                    if ext and fnmatch.fnmatch(name, base_pattern):
+                        return folder
+                else:
+                    if fnmatch.fnmatch(filename, pattern):
+                        return folder
         return None
 
 class FileSorter:
