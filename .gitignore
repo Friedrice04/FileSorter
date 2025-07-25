@@ -1,0 +1,13 @@
+# Build files
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+.venv/
+
+# User mappings (keep examples)
+src/mappings/*
+!src/mappings/example.json
+!src/mappings/example_template/
